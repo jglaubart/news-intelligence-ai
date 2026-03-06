@@ -10,7 +10,7 @@ from app.services.news_discovery import discover_news
 from app.services.news_postprocess import dedupe_articles, rank_and_limit
 from app.services.news_enrich import enrich_articles_with_text
 from app.services.summary_service import summarize_topic
-from app.services.report_service import build_pdf_report
+from app.services.report_service import build_pdf_report, REPORTS_DIR
 
 router = APIRouter()
 
@@ -92,7 +92,7 @@ def analyze_topic(req: TopicRequest):
 
 @router.get("/download-report")
 def download_report(filename: str = Query(..., description="Nombre del archivo PDF")):
-    file_path = os.path.join("generated_reports", filename)
+    file_path = os.path.join(REPORTS_DIR, filename)
 
     if not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail="Reporte no encontrado.")

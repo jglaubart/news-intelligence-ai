@@ -18,7 +18,7 @@ from reportlab.platypus import (
 )
 
 
-REPORTS_DIR = "generated_reports"
+REPORTS_DIR = "/tmp/generated_reports"
 
 
 def _ensure_reports_dir():
