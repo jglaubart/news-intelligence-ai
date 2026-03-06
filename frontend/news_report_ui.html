@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analizador de Noticias</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #059669;
+      --danger: #dc2626;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+
+    .hero {
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.1;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 760px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .card-body {
+      padding: 22px;
+    }
+
+    .section-title {
+      margin: 0 0 18px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .field textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: -6px;
+      margin-bottom: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    button,
+    .download-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .08s ease, background .2s ease, opacity .2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    button:hover,
+    .download-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .primary-btn {
+      background: var(--primary);
+      color: white;
+      flex: 1;
+    }
+
+    .primary-btn:hover { background: var(--primary-hover); }
+
+    .secondary-btn {
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .status.show { display: block; }
+    .status.info { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .status.error { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+    .status.success { background: #ecfdf5; color: var(--success); border: 1px solid #a7f3d0; }
+
+    .empty-state {
+      min-height: 500px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 32px;
+    }
+
+    .empty-state p {
+      max-width: 460px;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .results {
+      display: none;
+    }
+
+    .results.show {
+      display: block;
+    }
+
+    .summary-box {
+      background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+      border: 1px solid #dbeafe;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .summary-box h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .summary-box p {
+      margin: 0;
+      color: #374151;
+      line-height: 1.7;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1.25fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .panel-title {
+      margin: 0 0 12px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .articles-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .list-item {
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .list-item strong {
+      display: block;
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .article {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .article h4 {
+      margin: 0 0 8px;
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    .article p {
+      margin: 8px 0 0;
+      color: #374151;
+      line-height: 1.65;
+    }
+
+    .article a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .article a:hover {
+      text-decoration: underline;
+    }
+
+    .download-wrap {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 18px;
+    }
+
+    .download-btn {
+      background: var(--success);
+      color: white;
+      padding: 12px 18px;
+    }
+
+    .download-btn:hover {
+      background: #047857;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .panel-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .articles-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 20px 14px 42px;
+      }
+
+      .hero h1 {
+        font-size: 28px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>Analizador de noticias con informe PDF</h1>
+      <p>
+        Ingresá un tema, configurá la ventana temporal y generá un resumen ejecutivo con noticias relevantes.
+        Cuando termina, podés descargar el informe profesional en PDF.
+      </p>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <div class="card-body">
+          <h2 class="section-title">Nueva búsqueda</h2>
+
+          <div class="field">
+            <label for="topic">Tema</label>
+            <input id="topic" type="text" placeholder="Ej: inflación argentina marzo 2026" />
+          </div>
+
+          <div class="field">
+            <label for="daysBack">Días hacia atrás</label>
+            <input id="daysBack" type="number" min="1" max="365" value="30" />
+          </div>
+
+          <div class="field">
+            <label for="queries">Frases de búsqueda opcionales</label>
+            <textarea id="queries" placeholder="Una frase por línea. Si lo dejás vacío, el sistema puede generarlas automáticamente."></textarea>
+          </div>
+          <div class="hint">
+            Ejemplo:<br>
+            inflacion marzo 2026 argentina<br>
+            publicacion inflacion indec marzo 2026
+          </div>
+
+          <div class="actions">
+            <button id="submitBtn" class="primary-btn">Generar análisis</button>
+            <button id="clearBtn" class="secondary-btn" type="button">Limpiar</button>
+          </div>
+
+          <div id="status" class="status info"></div>
+        </div>
+      </div>
+
+      <div>
+        <div id="emptyState" class="card empty-state">
+          <p>
+            Todavía no hay resultados. Completá el formulario de la izquierda para generar el análisis,
+            ver el resumen de la búsqueda y descargar el PDF.
+          </p>
+        </div>
+
+        <div id="resultsSummary" class="results">
+          <div class="download-wrap">
+            <a id="downloadBtn" class="download-btn hidden" target="_blank" rel="noopener noreferrer">Descargar PDF</a>
+          </div>
+
+          <div class="summary-box card">
+            <div class="card-body">
+              <h2 id="resultTitle">Resumen ejecutivo</h2>
+              <p id="executiveSummary">—</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div id="resultsFull" class="results">
+      <div class="stats">
+        <div class="stat card stat-topic">
+          <div class="stat-label">Tema</div>
+          <div id="statTopic" class="stat-value" style="font-size:18px; line-height:1.35;">—</div>
+        </div>
+        <div class="stat card stat-found">
+          <div class="stat-label">Noticias encontradas</div>
+          <div id="statFinal" class="stat-value">0</div>
+        </div>
+      </div>
+
+      <div class="panel-grid">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="panel-title">Puntos clave</h3>
+            <div id="keyPoints" class="list"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <h3 class="panel-title">Tendencias repetidas</h3>
+            <div id="trends" class="list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h3 class="panel-title">Noticias relevantes</h3>
+          <div id="articles" class="list articles-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://127.0.0.1:8000';
+    //const API_BASE = '';
+
+    const topicInput = document.getElementById('topic');
+    const daysBackInput = document.getElementById('daysBack');
+    const queriesInput = document.getElementById('queries');
+    const submitBtn = document.getElementById('submitBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusBox = document.getElementById('status');
+
+    const emptyState = document.getElementById('emptyState');
+    const resultsSummary = document.getElementById('resultsSummary');
+    const resultsFull = document.getElementById('resultsFull');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    const resultTitle = document.getElementById('resultTitle');
+    const executiveSummary = document.getElementById('executiveSummary');
+    const statTopic = document.getElementById('statTopic');
+    const statFinal = document.getElementById('statFinal');
+    const keyPoints = document.getElementById('keyPoints');
+    const trends = document.getElementById('trends');
+    const articles = document.getElementById('articles');
+
+    function showStatus(message, type = 'info') {
+      statusBox.textContent = message;
+      statusBox.className = `status show ${type}`;
+    }
+
+    function hideStatus() {
+      statusBox.className = 'status info';
+      statusBox.textContent = '';
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text ?? '';
+      return div.innerHTML;
+    }
+
+    function normalizeSummary(summary) {
+      if (!summary) return null;
+      if (typeof summary === 'string') {
+        return {
+          executive_summary: summary,
+          key_points: [],
+          repeated_trends: [],
+          relevant_articles: []
+        };
+      }
+      return summary;
+    }
+
+    function renderList(container, items) {
+      if (!items || items.length === 0) {
+        container.innerHTML = '<div class="list-item"><div class="meta">No hay información disponible.</div></div>';
+        return;
+      }
+
+      container.innerHTML = items.map(item => `
+        <div class="list-item">
+          <strong>${escapeHtml(item)}</strong>
+        </div>
+      `).join('');
+    }
+
+    function renderArticles(items) {
+      if (!items || items.length === 0) {
+        articles.innerHTML = '<div class="list-item"><div class="meta">No hay artículos destacados.</div></div>';
+        return;
+      }
+
+      articles.innerHTML = items.map(article => `
+        <div class="article">
+          <h4>${escapeHtml(article.title || 'Sin título')}</h4>
+          <div class="meta">${escapeHtml(article.source || 'Sin fuente')} · ${escapeHtml(article.published || 'Sin fecha')}</div>
+          <p>${escapeHtml(article.why_relevant || '')}</p>
+          ${article.link ? `<p><a href="${escapeHtml(article.link)}" target="_blank" rel="noopener noreferrer">Abrir nota</a></p>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderResults(data) {
+      const summary = normalizeSummary(data.summary);
+
+      emptyState.classList.add('hidden');
+      resultsSummary.classList.add('show');
+      resultsFull.classList.add('show');
+
+      resultTitle.textContent = `Resumen ejecutivo · ${data.topic || 'Análisis'}`;
+      executiveSummary.textContent = summary?.executive_summary || 'No se generó resumen.';
+
+      statTopic.textContent = data.topic || '—';
+      statFinal.textContent = data.articles_found_final ?? 0;
+
+      renderList(keyPoints, summary?.key_points || []);
+      renderList(trends, summary?.repeated_trends || []);
+      renderArticles(summary?.relevant_articles || []);
+
+      if (data.download_url) {
+        downloadBtn.href = `${API_BASE}${data.download_url}`;
+        downloadBtn.classList.remove('hidden');
+      } else {
+        downloadBtn.classList.add('hidden');
+      }
+    }
+
+    function clearResults() {
+      resultsSummary.classList.remove('show');
+      resultsFull.classList.remove('show');
+      emptyState.classList.remove('hidden');
+      downloadBtn.classList.add('hidden');
+      keyPoints.innerHTML = '';
+      trends.innerHTML = '';
+      articles.innerHTML = '';
+      executiveSummary.textContent = '—';
+      statTopic.textContent = '—';
+      statFinal.textContent = '0';
+    }
+
+    async function runAnalysis() {
+      const topic = topicInput.value.trim();
+      const daysBack = Number(daysBackInput.value || 30);
+      const queries = queriesInput.value
+        .split('\n')
+        .map(q => q.trim())
+        .filter(Boolean);
+
+      if (!topic) {
+        showStatus('Ingresá un tema para analizar.', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      showStatus('Generando análisis e informe PDF...', 'info');
+
+      const payload = {
+        topic,
+        days_back: daysBack
+      };
+
+      if (queries.length > 0) {
+        payload.queries_used = queries;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/analyze-topic`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || 'Ocurrió un error al generar el análisis.');
+        }
+
+        renderResults(data);
+        showStatus('Análisis generado correctamente. Ya podés descargar el PDF.', 'success');
+      } catch (error) {
+        console.error(error);
+        showStatus(error.message || 'No se pudo completar la búsqueda.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    submitBtn.addEventListener('click', runAnalysis);
+
+    clearBtn.addEventListener('click', () => {
+      topicInput.value = '';
+      daysBackInput.value = '30';
+      queriesInput.value = '';
+      hideStatus();
+      clearResults();
+    });
+  </script>
+</body>
+</html>
