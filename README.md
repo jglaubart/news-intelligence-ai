@@ -10,7 +10,8 @@ The application automatically collects recent news, extracts article content, de
 
 If deployed, you can try the application here:
 
-https://your-project-url.vercel.app
+https://news-intelligence-ai.vercel.app/
+
 
 ---
 
